@@ -1450,8 +1450,11 @@ def main():
         else:
             st.write("No analysis steps logged yet. Run the app to populate the log.")
 
-    with tab3:
-        st.header("Backtesting Results")
-        st.write("This tab shows the performance of the model on historical data.")
-        if st.session_state.backtest_history:
-            backtest_history_df = pd.DataFrame(st.session_state.backtest_history
+
+        with tabs[3]:
+         st.header("Backtesting Results")
+           if st.session_state.backtest_history:
+                backtest_history_df = pd.DataFrame(st.session_state.backtest_history)
+                   st.dataframe(backtest_history_df)
+         else:
+              st.write("No backtesting results available yet. Run a backtest to see results.")
