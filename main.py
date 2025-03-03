@@ -1455,6 +1455,6 @@ def main():
          st.header("Backtesting Results")
          if st.session_state.backtest_history:
                 backtest_history_df = pd.DataFrame(st.session_state.backtest_history)
-                   st.dataframe(backtest_history_df)
+                st.dataframe(backtest_history_df)
          else:
               st.write("No backtesting results available yet. Run a backtest to see results.")
