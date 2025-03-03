@@ -1453,7 +1453,7 @@ def main():
 
         with tabs[3]:
          st.header("Backtesting Results")
-           if st.session_state.backtest_history:
+         if st.session_state.backtest_history:
                 backtest_history_df = pd.DataFrame(st.session_state.backtest_history)
                    st.dataframe(backtest_history_df)
          else:
