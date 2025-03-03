@@ -1,0 +1,16 @@
+# PyCharm project files
+.idea/
+
+# Streamlit configuration
+.streamlit/
+
+# Virtual environment
+.venv/
+
+# Local database and log files
+stock_predictor.db
+stock_predictor_log.txt
+
+# Python cache files
+*.pyc
+__pycache__/
