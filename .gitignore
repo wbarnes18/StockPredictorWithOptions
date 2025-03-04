@@ -169,3 +169,8 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+.idea/
+__pycache__
+*.db
+.streamlit/secrets.toml
+generate_main.py # Optional, if you don’t want to commit this file
