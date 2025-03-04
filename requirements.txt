@@ -1,0 +1,10 @@
+streamlit==1.30.0
+yfinance
+pandas
+numpy
+scikit-learn
+ta
+mplfinance
+plotly
+vaderSentiment
+xgboost
