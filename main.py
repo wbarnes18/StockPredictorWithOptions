@@ -4,12 +4,13 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
-from ta.trend import SMAIndicator
+from ta.trend import SMAIndicator, MACD
 from ta.momentum import RSIIndicator
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import mean_squared_error
+from datetime import datetime, timedelta
 
 # Streamlit app title
 st.title("Stock Predictor with Options")
@@ -17,11 +18,35 @@ st.title("Stock Predictor with Options")
 # User input for stock ticker
 ticker = st.text_input("Enter a stock ticker (e.g., AAPL):", "AAPL")
 
+# Function to fetch minute-level data in chunks
+def fetch_minute_data(ticker_symbol, total_days=28, chunk_days=7):
+    stock = yf.Ticker(ticker_symbol)
+    end_date = datetime.now()
+    all_data = pd.DataFrame()
+
+    # Fetch data in chunks
+    for i in range(total_days // chunk_days):
+        start_date = end_date - timedelta(days=chunk_days)
+        chunk_data = stock.history(start=start_date, end=end_date, interval="1m")
+        if not chunk_data.empty:
+            # Append to the main DataFrame
+            all_data = pd.concat([chunk_data, all_data])
+        end_date = start_date
+
+    # Remove duplicates (if any) based on timestamp
+    if not all_data.empty:
+        all_data = all_data[~all_data.index.duplicated(keep="first")]
+        all_data.sort_index(inplace=True)
+    return all_data
+
 if ticker:
     # Fetch stock data
     try:
         stock = yf.Ticker(ticker)
-        minute_data = stock.history(period="7d", interval="1m")
+
+        # Fetch extended minute-level data (e.g., 28 days)
+        st.subheader("Fetching Minute-Level Data")
+        minute_data = fetch_minute_data(ticker, total_days=28, chunk_days=7)
         hour_data = stock.history(period="60d", interval="1h")
         day_data = stock.history(period="60d", interval="1d")
 
@@ -29,16 +54,26 @@ if ticker:
         if minute_data.empty and hour_data.empty and day_data.empty:
             st.error("No data available for this ticker. Market might be closed, or the ticker is invalid.")
         else:
-            # Display raw data (optional, for debugging)
+            # Display minute-level data
+            st.subheader(f"Minute-Level Data for {ticker} (Last 28 Days)")
+            if not minute_data.empty:
+                st.write(minute_data.tail())
+            else:
+                st.write("Minute-level data unavailable (market may be closed).")
+
+            # Display daily data
             st.subheader(f"Daily Data for {ticker}")
             st.write(day_data.tail())
 
             # --- Technical Indicators ---
             st.subheader("Technical Indicators")
 
-            # Calculate SMA (20-day) and RSI (14-day) using daily data
+            # Calculate SMA (20-day), RSI (14-day), and MACD using daily data
             day_data["SMA_20"] = SMAIndicator(close=day_data["Close"], window=20).sma_indicator()
             day_data["RSI_14"] = RSIIndicator(close=day_data["Close"], window=14).rsi()
+            macd = MACD(close=day_data["Close"])
+            day_data["MACD"] = macd.macd()
+            day_data["MACD_Signal"] = macd.macd_signal()
 
             # Plot 1: Stock Price with SMA
             fig_price = go.Figure()
@@ -68,7 +103,7 @@ if ticker:
             # --- Sentiment Analysis ---
             st.subheader("Sentiment Analysis")
 
-            # Placeholder news headline (replace with real news data in the future)
+            # Placeholder news headline
             news_headline = f"{ticker} announces a major product launch next quarter!"
             analyzer = SentimentIntensityAnalyzer()
             sentiment_scores = analyzer.polarity_scores(news_headline)
@@ -90,9 +125,10 @@ if ticker:
 
             # Prepare data for prediction (using daily data)
             if not day_data.empty:
-                # Feature engineering: Use Close price and SMA as features
-                df = day_data[["Close", "SMA_20"]].dropna()
-                X = df[["SMA_20"]]
+                # Feature engineering: Use SMA, RSI, MACD, Volume, and Sentiment as features
+                day_data["Sentiment"] = sentiment_scores["compound"]  # Same sentiment for all rows (placeholder)
+                df = day_data[["Close", "SMA_20", "RSI_14", "MACD", "MACD_Signal", "Volume", "Sentiment"]].dropna()
+                X = df[["SMA_20", "RSI_14", "MACD", "MACD_Signal", "Volume", "Sentiment"]]
                 y = df["Close"]
 
                 # Split data
@@ -109,7 +145,7 @@ if ticker:
                 rmse = np.sqrt(mean_squared_error(y_test, y_pred))
                 st.write(f"Root Mean Squared Error (RMSE) on Test Data: {rmse:.2f}")
 
-                # Predict the next day's price (using the last available data)
+                # Predict the next day's price
                 last_features = X.iloc[-1:].values
                 next_day_pred = model.predict(last_features)[0]
                 st.write(f"Predicted Next Day's Closing Price: ${next_day_pred:.2f}")
@@ -120,6 +156,16 @@ if ticker:
                 fig_pred.add_trace(go.Scatter(x=X_test.index, y=y_pred, mode="lines", name="Predicted Price", line=dict(color="red")))
                 fig_pred.update_layout(title=f"{ticker} Actual vs Predicted Prices", xaxis_title="Date", yaxis_title="Price (USD)")
                 st.plotly_chart(fig_pred)
+
+                # Feature Importance
+                st.subheader("Feature Importance")
+                feature_importance = model.feature_importances_
+                importance_df = pd.DataFrame({
+                    "Feature": X.columns,
+                    "Importance": feature_importance
+                }).sort_values(by="Importance", ascending=False)
+                fig_importance = px.bar(importance_df, x="Importance", y="Feature", orientation="h", title="Feature Importance in XGBoost Model")
+                st.plotly_chart(fig_importance)
             else:
                 st.write("Not enough data to make predictions.")
 
