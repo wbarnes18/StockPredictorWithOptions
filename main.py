@@ -1125,7 +1125,7 @@ def evaluate_predictions(ticker, historical_data):
 def main():
     st.title("Stock Predictor of the Third Age")
 
-    tab1, tab2, tab3, tab4 = st.tabs(["Main App", "Analysis Log", "Backtesting Results", "Prediction Outcomes"])
+    tab1, tab2, tab3, tab4 = st.beta_tabs(["Main App", "Analysis Log", "Backtesting Results", "Prediction Outcomes"])
 
     with tab1:
         # Prediction Process Sidebar
@@ -1474,6 +1474,7 @@ def main():
     # Evaluate predictions
     evaluate_predictions(ticker, st.session_state.historical_data)
 
+print("tab2:", tab2)
 
 with tab2:
     st.header("Analysis Log of the Third Age")
