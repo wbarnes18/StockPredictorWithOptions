@@ -104,7 +104,9 @@ if 'is_training' not in st.session_state:
     st.session_state.is_training = False
 if 'training_completed' not in st.session_state:
     st.session_state.training_completed = {"minutes": False, "hours": False, "days": False}
- # Function to add step to prediction process
+
+
+# Function to add step to prediction process
 def add_prediction_step(step):
     st.session_state.prediction_steps.append(step)
 
@@ -148,7 +150,9 @@ def load_historical_data(ticker):
             historical_data["days"] = (pd.read_json(StringIO(result[2])), "1d")
         return historical_data
     return None
- # Save model configuration to database
+
+
+# Save model configuration to database
 def save_model_config(ticker, model_type, selected_indicators, use_sentiment):
     c.execute(
         "INSERT OR REPLACE INTO model_configs (ticker, model_type, selected_indicators, use_sentiment) VALUES (?, ?, ?, ?)",
@@ -240,7 +244,9 @@ def compute_sentiment(posts):
     )
 
     return sentiments, avg_sentiment
-  # Fetch VIX data
+
+
+# Fetch VIX data
 @st.cache_data
 def fetch_vix_data():
     try:
@@ -329,6 +335,8 @@ def update_historical_data(ticker, historical_data):
         add_prediction_step("Data Update: Successfully updated historical data.")
     except Exception as e:
         add_prediction_step(f"Data Update: Failed to update historical data. Error: {str(e)}.")
+
+
 # Add indicators to historical data
 @st.cache_data
 def add_indicators(data, selected_indicators, use_sentiment, ticker):
@@ -436,6 +444,8 @@ def add_indicators(data, selected_indicators, use_sentiment, ticker):
             "Suggestions: Check indicator implementation or reduce the number of indicators."
         )
         return None
+
+
 # UPDATED: Self-improvement training function to continuously improve until target accuracy
 def train_with_self_improvement(data, model_type, granularity, selected_indicators, use_sentiment, ticker,
                                 target_accuracy):
@@ -452,7 +462,7 @@ def train_with_self_improvement(data, model_type, granularity, selected_indicato
     # Limit to a small number of iterations for testing
     max_iterations = 3  # Temporarily limit to 3 iterations for debugging
     while current_accuracy < target_accuracy and st.session_state.is_training and not \
-    st.session_state.training_completed[granularity] and iteration < max_iterations:
+            st.session_state.training_completed[granularity] and iteration < max_iterations:
         iteration += 1
         add_prediction_step(f"Training Iteration {iteration} for {granularity}...")
 
@@ -465,7 +475,8 @@ def train_with_self_improvement(data, model_type, granularity, selected_indicato
             features.append('Sentiment')
         additional_features = ['ATR', 'VWAP', 'CCI', 'Stochastic', 'ADX', 'Ichimoku_A', 'Ichimoku_B', 'WyckoffPhase',
                                'MACD_Hist', 'BB_Width', 'OBV', 'MFI', 'RVI', 'Keltner_Upper', 'Keltner_Lower',
-                               'Donchian_Upper', 'Donchian_Lower', 'Parabolic_SAR', 'CMF', 'Force_Index', 'Volume_Delta', 'Elder_Impulse',
+                               'Donchian_Upper', 'Donchian_Lower', 'Parabolic_SAR', 'CMF', 'Force_Index',
+                               'Volume_Delta', 'Elder_Impulse',
                                'RSI']
         features.extend([f for f in additional_features if f in data.columns])
 
@@ -567,7 +578,9 @@ def train_with_self_improvement(data, model_type, granularity, selected_indicato
         st.session_state.training_completed[granularity] = True
 
     return model, current_accuracy
- # Backtesting function
+
+
+# Backtesting function
 def backtest_model(data, model_type, granularity, selected_indicators, use_sentiment, ticker):
     add_prediction_step(f"Backtesting: Starting backtesting for {granularity} granularity...")
     try:
@@ -712,7 +725,9 @@ def backtest_model(data, model_type, granularity, selected_indicators, use_senti
             "Suggestions: Check data availability or model configuration."
         )
         return None, None, None, None, None, None, None, None
- # Suggest indicator to improve accuracy
+
+
+# Suggest indicator to improve accuracy
 def suggest_indicator(feature_importance, current_indicators):
     if feature_importance is None:
         return "Run the prediction with Random Forest to get feature importance for indicator suggestions."
@@ -884,7 +899,9 @@ def predict_future(data, model, model_type, horizon_value, horizon_unit, selecte
             "Suggestions: Check model configuration or extend the horizon."
         )
         return None, None
-  # Recommend options contracts
+
+
+# Recommend options contracts
 def recommend_options(ticker, predictions, horizon_minutes, prediction_id):
     add_prediction_step("Options Recommendation: Evaluating options contracts...")
     try:
@@ -909,7 +926,7 @@ def recommend_options(ticker, predictions, horizon_minutes, prediction_id):
             (options.calls['strike'] > valley) &
             (options.calls['strike'] <= peak + strike_range) &
             (options.calls['impliedVolatility'] < iv_threshold)
-        ]
+            ]
         call_profit = 0
         best_call = None
         if not otm_calls.empty:
@@ -922,7 +939,7 @@ def recommend_options(ticker, predictions, horizon_minutes, prediction_id):
             (options.puts['strike'] < peak) &
             (options.puts['strike'] >= valley - strike_range) &
             (options.puts['impliedVolatility'] < iv_threshold)
-        ]
+            ]
         put_profit = 0
         best_put = None
         if not otm_puts.empty:
@@ -962,7 +979,8 @@ def recommend_options(ticker, predictions, horizon_minutes, prediction_id):
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=predictions.index, y=predictions['Close'], mode='lines', name='Predicted Price',
                                      line=dict(color='blue')))
-            fig.add_hline(y=result['strike'], line_dash="dash", line_color="red", annotation_text=f"{result['type']} Strike: ${result['strike']:.2f}",
+            fig.add_hline(y=result['strike'], line_dash="dash", line_color="red",
+                          annotation_text=f"{result['type']} Strike: ${result['strike']:.2f}",
                           annotation_position="top left")
             fig.update_layout(title=f"Options Recommendation for {ticker}: Predicted Price Movement",
                               xaxis_title="Date", yaxis_title="Price", template="plotly_dark")
@@ -1101,7 +1119,9 @@ def evaluate_predictions(ticker, historical_data):
             except Exception as e:
                 add_prediction_step(
                     f"Prediction Evaluation: Failed to evaluate prediction ID {pred_id}. Error: {str(e)}.")
- # Streamlit UI (Updated to ensure continuous self-improvement and proper backtesting flow)
+
+
+# Streamlit UI (Updated to ensure continuous self-improvement and proper backtesting flow)
 def main():
     st.title("Stock Predictor of the Third Age")
 
@@ -1268,7 +1288,7 @@ def main():
                 st.metric("Hours Accuracy", f"{st.session_state.current_accuracies['hours']:.2f}%", delta=None)
             with col3:
                 st.metric("Days Accuracy", f"{st.session_state.current_accuracies['days']:.2f}%", delta=None)
-             # Proceed to Backtesting Only After Training is Complete or Stopped
+            # Proceed to Backtesting Only After Training is Complete or Stopped
             all_training_completed = all(st.session_state.training_completed.values())
             if not st.session_state.is_training and all_training_completed:
                 # Perform backtesting for all granularities
@@ -1318,211 +1338,215 @@ def main():
                 data_with_indicators = add_indicators(data, tuple(st.session_state.selected_indicators),
                                                       st.session_state.use_sentiment, ticker)
 
-                # Live Candlestick Chart (Updated to fix mplfinance display)
-                st.write("Live Candlestick Chart (Last 5 Days, 5-Minute Intervals)")
-                fig = mpf.figure(style='charles', figsize=(10, 6))
-                ax = fig.add_subplot()
-                mpf.plot(data, type='candle', ax=ax, volume=True, title=f"{ticker} Candlestick Chart", ylabel='Price')
-                st.pyplot(fig)
+    # Live Candlestick Chart (Updated to fix mplfinance display)
+    st.write("Live Candlestick Chart (Last 5 Days, 5-Minute Intervals)")
+    fig = mpf.figure(style='charles', figsize=(10, 6))
+    ax = fig.add_subplot()
+    mpf.plot(data, type='candle', ax=ax, volume=True, title=f"{ticker} Candlestick Chart", ylabel='Price')
+    st.pyplot(fig)
 
-                # Indicators and Sentiment
+    # Indicators and Sentiment
+    if data_with_indicators is not None:
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(x=data_with_indicators.index, y=data_with_indicators['Close'], mode='lines',
+                       name='Close Price', line=dict(color='blue')))
+
+        for indicator in st.session_state.selected_indicators:
+            if indicator in data_with_indicators.columns:
+                fig.add_trace(go.Scatter(x=data_with_indicators.index, y=data_with_indicators[indicator],
+                                         mode='lines', name=indicator))
+            elif indicator == "MACD Histogram":
+                fig.add_trace(go.Scatter(x=data_with_indicators.index, y=data_with_indicators['MACD_Hist'],
+                                         mode='lines', name='MACD Histogram'))
+            elif indicator == "Ichimoku Cloud":
+                fig.add_trace(go.Scatter(x=data_with_indicators.index, y=data_with_indicators['Ichimoku_A'],
+                                         mode='lines', name='Ichimoku A'))
+                fig.add_trace(go.Scatter(x=data_with_indicators.index, y=data_with_indicators['Ichimoku_B'],
+                                         mode='lines', name='Ichimoku B'))
+
+        if st.session_state.use_sentiment:
+            fig.add_trace(
+                go.Scatter(x=data_with_indicators.index, y=data_with_indicators['Sentiment'], mode='lines',
+                           name='Sentiment', yaxis="y2"))
+
+        fig.update_layout(
+            title=f"{ticker} Indicators and Sentiment",
+            xaxis_title="Date",
+            yaxis_title="Price/Indicator Value",
+            yaxis2=dict(title="Sentiment", overlaying="y", side="right"),
+            template="plotly_dark"
+        )
+        st.plotly_chart(fig)
+    # Step 3: Refinement Phase
+    st.subheader("Step 3: Refine the Model")
+    model_options = ["Random Forest", "XGBoost", "LSTM"]
+    new_model_type = st.selectbox("Change Prediction Model", model_options,
+                                  index=model_options.index(model_type) if model_type in model_options else 0)
+    if new_model_type != model_type:
+        st.session_state.model_type = new_model_type
+        st.session_state.backtest_results = {}  # Reset backtest results
+        for granularity in ["minutes", "hours", "days"]:
+            if granularity in st.session_state.historical_data:
+                data, interval = st.session_state.historical_data[granularity]
+                data_with_indicators = add_indicators(data, tuple(st.session_state.selected_indicators),
+                                                      st.session_state.use_sentiment, ticker)
                 if data_with_indicators is not None:
-                    fig = go.Figure()
-                    fig.add_trace(
-                        go.Scatter(x=data_with_indicators.index, y=data_with_indicators['Close'], mode='lines',
-                                   name='Close Price', line=dict(color='blue')))
-
-                    for indicator in st.session_state.selected_indicators:
-                        if indicator in data_with_indicators.columns:
-                            fig.add_trace(go.Scatter(x=data_with_indicators.index, y=data_with_indicators[indicator],
-                                                     mode='lines', name=indicator))
-                        elif indicator == "MACD Histogram":
-                            fig.add_trace(go.Scatter(x=data_with_indicators.index, y=data_with_indicators['MACD_Hist'],
-                                                     mode='lines', name='MACD Histogram'))
-                        elif indicator == "Ichimoku Cloud":
-                            fig.add_trace(go.Scatter(x=data_with_indicators.index, y=data_with_indicators['Ichimoku_A'],
-                                                     mode='lines', name='Ichimoku A'))
-                            fig.add_trace(go.Scatter(x=data_with_indicators.index, y=data_with_indicators['Ichimoku_B'],
-                                                     mode='lines', name='Ichimoku B'))
-
-                    if st.session_state.use_sentiment:
-                        fig.add_trace(
-                            go.Scatter(x=data_with_indicators.index, y=data_with_indicators['Sentiment'], mode='lines',
-                                       name='Sentiment', yaxis="y2"))
-
-                    fig.update_layout(
-                        title=f"{ticker} Indicators and Sentiment",
-                        xaxis_title="Date",
-                        yaxis_title="Price/Indicator Value",
-                        yaxis2=dict(title="Sentiment", overlaying="y", side="right"),
-                        template="plotly_dark"
+                    backtest_results, mse, mae, accuracy, total_return, sharpe_ratio, feature_importance, model = backtest_model(
+                        data_with_indicators, new_model_type, granularity,
+                        st.session_state.selected_indicators,
+                        st.session_state.use_sentiment, ticker
                     )
-                    st.plotly_chart(fig)
-                   # Step 3: Refinement Phase
-                st.subheader("Step 3: Refine the Model")
-                model_options = ["Random Forest", "XGBoost", "LSTM"]
-                new_model_type = st.selectbox("Change Prediction Model", model_options,
-                                              index=model_options.index(model_type) if model_type in model_options else 0)
-                if new_model_type != model_type:
-                    st.session_state.model_type = new_model_type
-                    st.session_state.backtest_results = {}  # Reset backtest results
-                    for granularity in ["minutes", "hours", "days"]:
-                        if granularity in st.session_state.historical_data:
-                            data, interval = st.session_state.historical_data[granularity]
-                            data_with_indicators = add_indicators(data, tuple(st.session_state.selected_indicators),
-                                                                  st.session_state.use_sentiment, ticker)
-                            if data_with_indicators is not None:
-                                backtest_results, mse, mae, accuracy, total_return, sharpe_ratio, feature_importance, model = backtest_model(
-                                    data_with_indicators, new_model_type, granularity,
-                                    st.session_state.selected_indicators,
-                                    st.session_state.use_sentiment, ticker
-                                )
-                                if backtest_results is not None:
-                                    st.session_state.backtest_results[granularity] = (
-                                        backtest_results, mse, mae, accuracy, total_return, sharpe_ratio, model)
-                                    if feature_importance is not None:
-                                        st.session_state.feature_importance = feature_importance
-                    save_model_config(ticker, new_model_type, st.session_state.selected_indicators,
-                                      st.session_state.use_sentiment)
-                    st.rerun()
+                    if backtest_results is not None:
+                        st.session_state.backtest_results[granularity] = (
+                            backtest_results, mse, mae, accuracy, total_return, sharpe_ratio, model)
+                        if feature_importance is not None:
+                            st.session_state.feature_importance = feature_importance
+        save_model_config(ticker, new_model_type, st.session_state.selected_indicators,
+                          st.session_state.use_sentiment)
+        st.rerun()
 
-                # Granularity selector for refinement
-                refinement_granularity = st.selectbox("Select Backtesting Granularity for Refinement",
-                                                      ["minutes", "hours", "days", "all"], index=2)
-                st.session_state.refinement_granularity = refinement_granularity
+    # Granularity selector for refinement
+    refinement_granularity = st.selectbox("Select Backtesting Granularity for Refinement",
+                                          ["minutes", "hours", "days", "all"], index=2)
+    st.session_state.refinement_granularity = refinement_granularity
 
-                # ML suggestion
-                st.write("**ML Suggestion**:",
-                         suggest_indicator(st.session_state.feature_importance, st.session_state.selected_indicators))
+    # ML suggestion
+    st.write("**ML Suggestion**:",
+             suggest_indicator(st.session_state.feature_importance, st.session_state.selected_indicators))
 
-                if st.button("Refine Model"):
-                    st.session_state.backtest_results = {}
-                    granularities = [refinement_granularity] if refinement_granularity != "all" else ["minutes",
-                                                                                                      "hours",
-                                                                                                      "days"]
-                    for granularity in granularities:
-                        data, interval = st.session_state.historical_data[granularity]
-                        data_with_indicators = add_indicators(data, tuple(st.session_state.selected_indicators),
-                                                              st.session_state.use_sentiment, ticker)
-                        if data_with_indicators is not None:
-                            backtest_results, mse, mae, accuracy, total_return, sharpe_ratio, feature_importance, model = backtest_model(
-                                data_with_indicators, model_type, granularity, st.session_state.selected_indicators,
-                                st.session_state.use_sentiment, ticker
-                            )
-                            if backtest_results is not None:
-                                st.session_state.backtest_results[granularity] = (
-                                    backtest_results, mse, mae, accuracy, total_return, sharpe_ratio, model)
-                                if feature_importance is not None:
-                                    st.session_state.feature_importance = feature_importance
-                    save_model_config(ticker, model_type, st.session_state.selected_indicators,
-                                      st.session_state.use_sentiment)
-                    st.rerun()
-                 # Step 4: Time Horizon Prediction
-                st.subheader("Step 4: Predict with Time Horizon")
-                horizon_value = st.number_input("Time Horizon Value", min_value=1, value=3)
-                horizon_unit = st.selectbox("Time Horizon Unit", ["minutes", "hours", "days"])
+    if st.button("Refine Model"):
+        st.session_state.backtest_results = {}
+        granularities = [refinement_granularity] if refinement_granularity != "all" else ["minutes",
+                                                                                          "hours",
+                                                                                          "days"]
+        for granularity in granularities:
+            data, interval = st.session_state.historical_data[granularity]
+            data_with_indicators = add_indicators(data, tuple(st.session_state.selected_indicators),
+                                                  st.session_state.use_sentiment, ticker)
+            if data_with_indicators is not None:
+                backtest_results, mse, mae, accuracy, total_return, sharpe_ratio, feature_importance, model = backtest_model(
+                    data_with_indicators, model_type, granularity, st.session_state.selected_indicators,
+                    st.session_state.use_sentiment, ticker
+                )
+                if backtest_results is not None:
+                    st.session_state.backtest_results[granularity] = (
+                        backtest_results, mse, mae, accuracy, total_return, sharpe_ratio, model)
+                    if feature_importance is not None:
+                        st.session_state.feature_importance = feature_importance
+        save_model_config(ticker, model_type, st.session_state.selected_indicators,
+                          st.session_state.use_sentiment)
+        st.rerun()
+    # Step 4: Time Horizon Prediction
+    st.subheader("Step 4: Predict with Time Horizon")
+    horizon_value = st.number_input("Time Horizon Value", min_value=1, value=3)
+    horizon_unit = st.selectbox("Time Horizon Unit", ["minutes", "hours", "days"])
 
-                if st.button("Predict with Time Horizon"):
-                    data, interval = st.session_state.historical_data["days"]
-                    model = st.session_state.backtest_results["days"][-1]  # Get the trained model
-                    data_with_indicators = add_indicators(data, tuple(st.session_state.selected_indicators),
-                                                          st.session_state.use_sentiment, ticker)
-                    if data_with_indicators is not None:
-                        predictions, prediction_id = predict_future(
-                            data_with_indicators, model, model_type, horizon_value, horizon_unit,
-                            st.session_state.selected_indicators, st.session_state.use_sentiment, ticker, interval
-                        )
-                        if predictions is not None:
-                            st.session_state.refined_model = (predictions, horizon_value, horizon_unit, prediction_id)
-                            st.rerun()
+    if st.button("Predict with Time Horizon"):
+        data, interval = st.session_state.historical_data["days"]
+        model = st.session_state.backtest_results["days"][-1]  # Get the trained model
+        data_with_indicators = add_indicators(data, tuple(st.session_state.selected_indicators),
+                                              st.session_state.use_sentiment, ticker)
+        if data_with_indicators is not None:
+            predictions, prediction_id = predict_future(
+                data_with_indicators, model, model_type, horizon_value, horizon_unit,
+                st.session_state.selected_indicators, st.session_state.use_sentiment, ticker, interval
+            )
+            if predictions is not None:
+                st.session_state.refined_model = (predictions, horizon_value, horizon_unit, prediction_id)
+                st.rerun()
 
-                # Display predictions and options recommendations
-                if st.session_state.refined_model:
-                    predictions, horizon_value, horizon_unit, prediction_id = st.session_state.refined_model
-                    st.subheader(f"Predictions for {horizon_value} {horizon_unit}")
-                    st.dataframe(predictions)
+    # Display predictions and options recommendations
+    if st.session_state.refined_model:
+        predictions, horizon_value, horizon_unit, prediction_id = st.session_state.refined_model
+        st.subheader(f"Predictions for {horizon_value} {horizon_unit}")
+        st.dataframe(predictions)
 
-                    horizon_minutes = horizon_value if horizon_unit == "minutes" else horizon_value * 60 if horizon_unit == "hours" else horizon_value * 24 * 60
-                    result = recommend_options(ticker, predictions, horizon_minutes, prediction_id)
-                    if result:
-                        st.success(
-                            f"Recommended {result['type']} Option: Strike ${result['strike']:.2f}, Buy at ${result['buy_price']:.2f}, Sell at ${result['sell_price']:.2f}, Exit by {result['exit_time']}, Predicted Profit ${result['predicted_profit']:.2f}")
-                    else:
-                        st.warning(
-                            "No options recommendations available. Try adjusting prediction horizon or criteria.")
-
-                # Evaluate predictions
-                evaluate_predictions(ticker, st.session_state.historical_data)
-    with tab2:
-        st.header("Analysis Log of the Third Age")
-        st.write("This log tracks the steps taken, lessons learned, corrections made, and suggestions for improvement.")
-        if st.session_state.analysis_log:
-            for entry in st.session_state.analysis_log:
-                st.subheader(entry["Step"])
-                st.write(f"**Details**: {entry['Details']}")
-                st.write(f"**Lessons Learned**: {entry['Lessons Learned']}")
-                st.write(f"**Corrections**: {entry['Corrections']}")
-                st.write(f"**Suggestions**: {entry['Suggestions']}")
-                st.markdown("---")
+        horizon_minutes = horizon_value if horizon_unit == "minutes" else horizon_value * 60 if horizon_unit == "hours" else horizon_value * 24 * 60
+        result = recommend_options(ticker, predictions, horizon_minutes, prediction_id)
+        if result:
+            st.success(
+                f"Recommended {result['type']} Option: Strike ${result['strike']:.2f}, Buy at ${result['buy_price']:.2f}, Sell at ${result['sell_price']:.2f}, Exit by {result['exit_time']}, Predicted Profit ${result['predicted_profit']:.2f}")
         else:
-            st.write("No analysis steps logged yet. Run the app to populate the log.")
+            st.warning(
+                "No options recommendations available. Try adjusting prediction horizon or criteria.")
 
-    with tab3:
-        st.header("Backtesting Results")
-        if st.session_state.backtest_history:
-            backtest_history_df = pd.DataFrame(st.session_state.backtest_history)
-            st.dataframe(backtest_history_df)
-        else:
-            st.write("No backtesting results available yet. Run a backtest to see results.")
-    with tab4:
-        st.header("Prediction Outcomes")
-        c.execute("SELECT id, ticker, predicted_at, horizon_datetime, predicted_price, actual_price, metrics FROM predictions WHERE ticker = ?",
-                  (ticker,))
-        predictions = c.fetchall()
-        if predictions:
-            prediction_data = []
-            for pred in predictions:
-                pred_id, ticker, predicted_at, horizon_datetime, predicted_price, actual_price, metrics = pred
-                metrics_dict = json.loads(metrics) if metrics else {}
-                prediction_data.append({
-                    "ID": pred_id,
-                    "Ticker": ticker,
-                    "Predicted At": predicted_at,
-                    "Horizon": horizon_datetime,
-                    "Predicted Price": predicted_price,
-                    "Actual Price": actual_price if actual_price is not None else "Pending",
-                    "MSE": metrics_dict.get('mse', 'N/A'),
-                    "MAE": metrics_dict.get('mae', 'N/A'),
-                    "Accuracy (%)": metrics_dict.get('accuracy', 'N/A'),
-                    "Total Return (%)": metrics_dict.get('total_return', 'N/A'),
-                    "Sharpe Ratio": metrics_dict.get('sharpe_ratio', 'N/A')
+    # Evaluate predictions
+    evaluate_predictions(ticker, st.session_state.historical_data)
+
+
+with tab2:
+    st.header("Analysis Log of the Third Age")
+    st.write("This log tracks the steps taken, lessons learned, corrections made, and suggestions for improvement.")
+    if st.session_state.analysis_log:
+        for entry in st.session_state.analysis_log:
+            st.subheader(entry["Step"])
+            st.write(f"**Details**: {entry['Details']}")
+            st.write(f"**Lessons Learned**: {entry['Lessons Learned']}")
+            st.write(f"**Corrections**: {entry['Corrections']}")
+            st.write(f"**Suggestions**: {entry['Suggestions']}")
+            st.markdown("---")
+    else:
+        st.write("No analysis steps logged yet. Run the app to populate the log.")
+
+with tab3:
+    st.header("Backtesting Results")
+    if st.session_state.backtest_history:
+        backtest_history_df = pd.DataFrame(st.session_state.backtest_history)
+        st.dataframe(backtest_history_df)
+    else:
+        st.write("No backtesting results available yet. Run a backtest to see results.")
+with tab4:
+    st.header("Prediction Outcomes")
+    c.execute(
+        "SELECT id, ticker, predicted_at, horizon_datetime, predicted_price, actual_price, metrics FROM predictions WHERE ticker = ?",
+        (ticker,))
+    predictions = c.fetchall()
+    if predictions:
+        prediction_data = []
+        for pred in predictions:
+            pred_id, ticker, predicted_at, horizon_datetime, predicted_price, actual_price, metrics = pred
+            metrics_dict = json.loads(metrics) if metrics else {}
+            prediction_data.append({
+                "ID": pred_id,
+                "Ticker": ticker,
+                "Predicted At": predicted_at,
+                "Horizon": horizon_datetime,
+                "Predicted Price": predicted_price,
+                "Actual Price": actual_price if actual_price is not None else "Pending",
+                "MSE": metrics_dict.get('mse', 'N/A'),
+                "MAE": metrics_dict.get('mae', 'N/A'),
+                "Accuracy (%)": metrics_dict.get('accuracy', 'N/A'),
+                "Total Return (%)": metrics_dict.get('total_return', 'N/A'),
+                "Sharpe Ratio": metrics_dict.get('sharpe_ratio', 'N/A')
+            })
+        st.dataframe(pd.DataFrame(prediction_data))
+
+        # Display options outcomes
+        st.subheader("Options Outcomes")
+        c.execute(
+            "SELECT prediction_id, type, strike, buy_price, sell_price, exit_time, predicted_profit, actual_profit FROM options_recommendations WHERE prediction_id IN (SELECT id FROM predictions WHERE ticker = ?)",
+            (ticker,))
+        options = c.fetchall()
+        if options:
+            options_data = []
+            for opt in options:
+                pred_id, opt_type, strike, buy_price, sell_price, exit_time, predicted_profit, actual_profit = opt
+                options_data.append({
+                    "Prediction ID": pred_id,
+                    "Type": opt_type,
+                    "Strike": strike,
+                    "Buy Price": buy_price,
+                    "Sell Price": sell_price,
+                    "Exit Time": exit_time,
+                    "Predicted Profit": predicted_profit,
+                    "Actual Profit": actual_profit if actual_profit is not None else "Pending"
                 })
-            st.dataframe(pd.DataFrame(prediction_data))
-
-            # Display options outcomes
-            st.subheader("Options Outcomes")
-            c.execute("SELECT prediction_id, type, strike, buy_price, sell_price, exit_time, predicted_profit, actual_profit FROM options_recommendations WHERE prediction_id IN (SELECT id FROM predictions WHERE ticker = ?)",
-                      (ticker,))
-            options = c.fetchall()
-            if options:
-                options_data = []
-                for opt in options:
-                    pred_id, opt_type, strike, buy_price, sell_price, exit_time, predicted_profit, actual_profit = opt
-                    options_data.append({
-                        "Prediction ID": pred_id,
-                        "Type": opt_type,
-                        "Strike": strike,
-                        "Buy Price": buy_price,
-                        "Sell Price": sell_price,
-                        "Exit Time": exit_time,
-                        "Predicted Profit": predicted_profit,
-                        "Actual Profit": actual_profit if actual_profit is not None else "Pending"
-                    })
-                st.dataframe(pd.DataFrame(options_data))
-            else:
-                st.write("No options recommendations available yet.")
+            st.dataframe(pd.DataFrame(options_data))
         else:
-            st.write("No predictions available yet. Run a prediction to see outcomes.")
+            st.write("No options recommendations available yet.")
+    else:
+        st.write("No predictions available yet. Run a prediction to see outcomes.")
 
 if __name__ == "__main__":
     main()
